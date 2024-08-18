@@ -24,14 +24,6 @@ type problem struct {
 	IsProject   bool   ` json:"isproject" `
 }
 
-func getIndexPage(c *gin.Context) {
-	c.HTML(http.StatusOK, "index.html", nil)
-}
-
-func returnENV() {
-
-}
-
 // does not take in anything, returns db and err
 func initDB() (*sql.DB, error) {
 	//initialize env variables
@@ -52,6 +44,43 @@ func initDB() (*sql.DB, error) {
 		//"1" means error, "0" means all good
 	}
 	return db, err
+}
+
+type User struct {
+	ID   int
+	Name string
+}
+
+// takes in sql.db object
+func queryUsers(db *sql.DB) {
+	rows, err := db.Query("SELECT * FROM users")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to execute query : %v\n", err)
+	}
+	defer rows.Close()
+
+	var users []User
+
+	for rows.Next() {
+		var user User
+
+		if err := rows.Scan(&user.Name); err != nil {
+			fmt.Println("Error scanning row:", err)
+			return
+		}
+
+		users = append(users, user)
+		fmt.Println(user.ID, user.Name)
+	}
+
+	if err := rows.Err(); err != nil {
+		fmt.Println("Error during rows iteration:", err)
+	}
+
+}
+
+func getIndexPage(c *gin.Context) {
+	c.HTML(http.StatusOK, "index.html", nil)
 }
 
 func main() {
