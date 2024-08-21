@@ -1,4 +1,4 @@
-module example/csweeklyproj
+module csweeklyproj
 
 go 1.22.6
 

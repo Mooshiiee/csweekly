@@ -9,7 +9,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func initDB() (*sql.DB, error) {
+func InitDB() (*sql.DB, error) {
 	//initialize env variables
 	err := godotenv.Load()
 	if err != nil {

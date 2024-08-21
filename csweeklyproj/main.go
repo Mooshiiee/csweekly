@@ -5,100 +5,61 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
-	"os"
+
+	"csweeklyproj/db"
+	"csweeklyproj/queries"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
-type problem struct {
-	ID          string ` json:"id" `
-	Text        string ` json:"text" `
-	Hint        string ` json:"hint" `
-	Constraints string ` json:"constraints" `
-	Solution    string ` json:"solution" `
-	IsProject   bool   ` json:"isproject" `
-}
-
-// does not take in anything, returns db and err
-func initDB() (*sql.DB, error) {
-	//initialize env variables
-	err := godotenv.Load()
+// takes in the request state (gin.context) aswell as the db
+// connection (sql.DB) to then return index.html along with
+// a query of the problems
+func getIndexPage(c *gin.Context, database *sql.DB) {
+	users, err := queries.QueryUsers(database)
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatal(err)
 	}
-	url := os.Getenv("TURSO_DATABASE_URL")
-	if url == "" { //check if ENV is working correctly
-		log.Fatal("TURSO_DATABASE_URL environment variable is not set")
-	}
+	//gin will then combine index.html with the users object and then
+	//send the result back to the server
+	c.HTML(http.StatusOK, "index.tmpl", users)
+}
 
-	//initialize turso db
-	db, err := sql.Open("libsql", url)
+func getUsers(c *gin.Context, db *sql.DB) {
+	users, err := queries.QueryUsers(db)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to open db  %s: %s", url, err)
-		os.Exit(1)
-		//"1" means error, "0" means all good
-	}
-	return db, err
-}
-
-type User struct {
-	ID   int
-	Name string
-}
-
-// takes in sql.db object
-func queryUsers(db *sql.DB) {
-	rows, err := db.Query("SELECT * FROM users")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to execute query : %v\n", err)
-	}
-	defer rows.Close()
-
-	var users []User
-
-	for rows.Next() {
-		var user User
-
-		if err := rows.Scan(&user.Name); err != nil {
-			fmt.Println("Error scanning row:", err)
-			return
-		}
-
-		users = append(users, user)
-		fmt.Println(user.ID, user.Name)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
 
-	if err := rows.Err(); err != nil {
-		fmt.Println("Error during rows iteration:", err)
-	}
-
-}
-
-func getIndexPage(c *gin.Context) {
-	c.HTML(http.StatusOK, "index.html", nil)
+	c.JSON(http.StatusOK, users)
 }
 
 func main() {
 
-	db, err := initDB()
+	database, err := db.InitDB()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	//ensure the db closes on exit
-	defer db.Close()
+	defer database.Close()
 
 	//initialize Gin Router
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
-
-	router.GET("/", getIndexPage)
-	router.GET("/router")
+	//make a callback to getIndexPage instead of passing in the function
+	router.GET("/", func(c *gin.Context) {
+		getIndexPage(c, database)
+	})
+	router.GET("/users", func(c *gin.Context) {
+		getUsers(c, database)
+	})
 
 	//attach router to http.Server and start it aswell
 	router.Run("localhost:8080")
