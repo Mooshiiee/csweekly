@@ -22,7 +22,7 @@ func QueryUsers(db *sql.DB) ([]models.User, error) {
 		var user models.User
 
 		if err := rows.Scan(&user.ID, &user.Name); err != nil {
-			return nil, fmt.Errorf("Error scanning row: %w", err)
+			return nil, fmt.Errorf("error scanning row: %w", err)
 			//return users as nil, and error as the formatted message
 
 		}
@@ -40,7 +40,7 @@ func QueryUsers(db *sql.DB) ([]models.User, error) {
 	//return users and nil for the error.
 }
 
-func QueryProblems(db *sql.DB) ([]model.Problem, error) {
+func QueryProblems(db *sql.DB) ([]models.Problem, error) {
 	rows, err := db.Query("SELECT * FROM problems")
 	if err != nil {
 		return nil, err
@@ -57,14 +57,14 @@ func QueryProblems(db *sql.DB) ([]model.Problem, error) {
 		if err := rows.Scan(&problem.ID, &problem.Title,
 			&problem.Text, &problem.Constraints, &problem.Hint,
 			&problem.Solution); err != nil {
-			return albums, err
+			return problems, err
 		}
 		problems = append(problems, problem)
 	}
 	if err = rows.Err(); err != nil {
-		return albums, err
+		return problems, err
 	}
-	return albums, err
+	return problems, err
 }
 
 // takes in an sql.DB connection and the id from the request url, then returns
@@ -83,7 +83,7 @@ func QuerySingleProblem(db *sql.DB, id int) (models.Problem, error) {
 	)
 	if err != nil {
 		//return an empty struct if error
-		return models.Problem{}, fmt.Errorf("Error scanning Problem instance: %w", err)
+		return models.Problem{}, fmt.Errorf("error scanning Problem instance: %w", err)
 	}
 
 	return problem, nil

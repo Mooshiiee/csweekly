@@ -1,6 +1,10 @@
+// This is the main entrypoint to the application.
+// its only job is to process HTTP requests.
+// IT SHOULD NOT contain application logic,
+// that job is for Services package and Component Package
 package main
 
-//'package main' is always for a standalone executable probram
+//'package main' is always for a standalone executable program
 //(as opposed to a library)
 
 import (
@@ -11,6 +15,7 @@ import (
 	"csweeklyproj/db"
 	"csweeklyproj/queries"
 
+	"github.com/a-h/templ/examples/integration-gin/gintemplrenderer"
 	"github.com/gin-gonic/gin"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
@@ -25,7 +30,7 @@ func getIndexPage(c *gin.Context, database *sql.DB) {
 	}
 	//gin will then combine index.html with the users object and then
 	//send the result back to the server
-	c.HTML(http.StatusOK, "index.tmpl", users)
+	c.HTML(http.StatusOK, "index.html", users)
 }
 
 func getUsers(c *gin.Context, db *sql.DB) {
@@ -38,6 +43,17 @@ func getUsers(c *gin.Context, db *sql.DB) {
 	}
 
 	c.JSON(http.StatusOK, users)
+}
+
+func getProblems(c *gin.Context, database *sql.DB) {
+	problems, err := queries.QueryProblems(database)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, problems)
 }
 
 func main() {
@@ -53,12 +69,25 @@ func main() {
 	//initialize Gin Router
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
-	//make a callback to getIndexPage instead of passing in the function
+	//initialize the templ html renderer
+	ginHtmlRenderer := router.HTMLRender
+	router.HTMLRender = &gintemplrenderer.HTMLTempleRenderer{
+		fallbackHtmlRenderer: ginHtmlRenderer,
+	}
+
+	//Disable trusted proxy warning.
+	router.SetTrustedProxies(nil)
+
+	//make a callback to getIndexPage instead of
+	//passing in the function
 	router.GET("/", func(c *gin.Context) {
 		getIndexPage(c, database)
 	})
 	router.GET("/users", func(c *gin.Context) {
 		getUsers(c, database)
+	})
+	router.GET("/problems", func(c *gin.Context) {
+		getProblems(c, database)
 	})
 
 	//attach router to http.Server and start it aswell

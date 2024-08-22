@@ -10,8 +10,10 @@
     <div>
         hello
     </div>
-    <div id="object-display" hx-get="/users" hx-trigger="load" hx-target="#object-display" hx-swap="innerHTML">
-        <!-- Object will be displayed here -->
+    <div id="user-display" hx-get="/users" hx-trigger="load" hx-target="#user-display" hx-swap="innerHTML">
     </div>
+    <div id="problem-display" hx-get="/problems" hx-trigger="load" hx-target="#problem-display" hx-swap="innerHTML">
+    </div>
+    
 </body>
 </html>
